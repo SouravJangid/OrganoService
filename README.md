@@ -1,11 +1,17 @@
-----------Command for Getting Project at Local-----------------
+----------Command for Getting Project Locally----------
+
+# Clone the repository
 git clone https://github.com/SouravJangid/OrganoService
+
+# Navigate into the project directory
 cd OrganoService
-#Backend
+
+# Backend Setup
 cd backend
-npm i
+npm install
 npm run server
-#client folder
-cd client
-npm i
-npm run start
+
+# Frontend Setup
+cd ../client
+npm install
+npm start
