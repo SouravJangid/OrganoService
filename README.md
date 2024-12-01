@@ -20,6 +20,12 @@ npm install
 npm run server
 ```
 
+
+
+###Open in new terminal for client
+
+
+
 ### Frontend Setup
 ```bash
 cd ../client
