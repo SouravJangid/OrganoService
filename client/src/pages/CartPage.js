@@ -83,7 +83,7 @@ const CartPage = () => {
       // Step 2: Open Razorpay payment window
       const options = {
         key: "rzp_live_ukWRM7cEFVIohW", // Replace with your Razorpay Key
-        amount:  0 * 100, // Convert to paise
+        amount:  totalPrices() * 100, // Convert to paise
         currency: "INR",
         name: "Oragano Service",
         description: "Payment for your cart items",
