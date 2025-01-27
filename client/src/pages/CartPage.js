@@ -32,6 +32,17 @@ const CartPage = () => {
       console.log(error);
     }
   };
+  const totalPrices = () => {
+    try {
+      let total = 0;
+      cart?.map((item) => {
+        total = total + item.price;
+      });
+      return total;
+    } catch (error) {
+      console.log(error);
+    }
+  };
   //detele item
   const removeCartItem = (pid) => {
     try {
@@ -44,7 +55,7 @@ const CartPage = () => {
       console.log(error);
     }
   };
-
+  
   //get payment gateway token
   const getToken = async () => {
     try {
@@ -57,23 +68,65 @@ const CartPage = () => {
   useEffect(() => {
     getToken();
   }, [auth?.token]);
-
+  
   //handle payments
   const handlePayment = async () => {
     try {
       setLoading(true);
-      const { nonce } = await instance.requestPaymentMethod();
-      const { data } = await axios.post("/api/v1/product/braintree/payment", {
-        nonce,
-        cart,
+      // // Step 1: Create a payment order on the server
+      const { data: order } = await axios.post(
+        "/api/v1/product/razorpay/create-order",
+        {
+          amount: cart.reduce((total, item) => total + item.price, 0) * 100, // Convert to paise
+        }
+      );
+      // Step 2: Open Razorpay payment window
+      const options = {
+        key: "rzp_live_ukWRM7cEFVIohW", // Replace with your Razorpay Key
+        amount:  0 * 100, // Convert to paise
+        currency: "INR",
+        name: "Oragano Service",
+        description: "Payment for your cart items",
+        order_id: order.id,
+        handler: async function (response) {
+          // Step 3: Verify payment on the server
+          const { data } = await axios.post("/api/v1/product/razorpay/data", {
+            // razorpay_payment_id: response.razorpay_payment_id,
+            // razorpay_order_id: response.razorpay_order_id,
+            // razorpay_signature: response.razorpay_signature,
+          });
+
+          // Step 4: Clear cart and show success message
+          if (data.success) {
+            localStorage.removeItem("cart");
+            setCart([]);
+            navigate("/dashboard/user/orders");
+            toast.success("Payment Completed Successfully");
+          } else {
+            toast.error("Payment verification failed. Please try again.");
+          }
+        },
+        prefill: {
+          name: auth?.user?.name || "",
+          email: auth?.user?.email || "",
+          contact: "9999999999", // Replace with dynamic contact if available
+        },
+        theme: {
+          color: "#3399cc",
+        },
+      };
+      console.log("Amount to be paid:", options.amount);
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response) {
+        toast.error("Payment failed. Please try again.");
       });
+
+      rzp.open();
       setLoading(false);
-      localStorage.removeItem("cart");
-      setCart([]);
-      navigate("/dashboard/user/orders");
-      toast.success("Payment Completed Successfully ");
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      toast.error("An error occurred during the payment process.");
       setLoading(false);
     }
   };
@@ -168,24 +221,14 @@ const CartPage = () => {
                 </div>
               )}
               <div className="mt-2">
-                {!clientToken || !auth?.token || !cart?.length ? (
+                {clientToken || !auth?.token || !cart?.length ? (
                   ""
                 ) : (
                   <>
-                    <DropIn
-                      options={{
-                        authorization: clientToken,
-                        paypal: {
-                          flow: "vault",
-                        },
-                      }}
-                      onInstance={(instance) => setInstance(instance)}
-                    />
-
                     <button
                       className="btn btn-primary"
                       onClick={handlePayment}
-                      disabled={loading || !instance || !auth?.user?.address}
+                      // disabled={loading || !instance || !auth?.user?.address}
                     >
                       {loading ? "Processing ...." : "Make Payment"}
                     </button>
